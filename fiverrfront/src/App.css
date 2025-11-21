@@ -1,0 +1,1517 @@
+/**
+ * App.css contains all component-specific styles for the Fiverr for Students app.
+ * This file uses a dark theme by default with a green accent (#00d084) and supports
+ * a light theme variant for host mode. Each section is commented to explain its purpose.
+ */
+
+/* ========== Global Root Variables and Base Styles ========== */
+/* Sets the default font stack and dark background for the entire app */
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #050505;
+  color: #f5f5f5;
+  line-height: 1.6;
+}
+
+/* Body uses a subtle radial gradient overlay for visual depth */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(0, 208, 132, 0.08), transparent 60%),
+    #050505;
+  transition: background 0.6s ease;
+}
+
+/* Host mode white background */
+body.host-mode-active {
+  background: radial-gradient(circle at top, rgba(0, 208, 132, 0.03), transparent 60%),
+    #fafafa;
+}
+
+/* Links inherit color and remove default underline */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Buttons and inputs inherit the app font family */
+button,
+input {
+  font-family: inherit;
+}
+
+/* Root container spans full viewport height */
+#root {
+  min-height: 100vh;
+}
+
+/* ========== Navigation Bar Styles ========== */
+/* Sticky navbar that stays at the top during scroll with glassmorphism effect */
+.nav-shell {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Dark theme variant for student mode (default) */
+.nav-dark {
+  background: rgba(8, 8, 8, 0.92);
+}
+
+/* Light theme variant for host mode */
+.nav-light {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(10, 10, 10, 0.1);
+  color: #121212;
+}
+
+/* Navigation right section */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-self: end;
+}
+
+.google-signin-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Logo pair displays "Fiverr" in green and "for Students" in muted color */
+.logo-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.logo-green {
+  color: #00d084;
+  font-size: 1.5rem;
+}
+
+/* Navigation links container for About, Cart, Wishlist */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Icon links (cart, wishlist) with badge support for counts */
+.icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+}
+
+/* Badge shows count of items in cart/wishlist */
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #00d084;
+  color: #050505;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  font-weight: 600;
+}
+
+.badge-red {
+  background: #ef4444;
+  color: #ffffff;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Mode switch toggle between Student and Host modes */
+.mode-switch {
+  display: flex;
+  border-radius: 999px;
+  padding: 0.2rem;
+  background: rgba(255, 255, 255, 0.1);
+  justify-self: center;
+}
+
+.mode-switch-center {
+  justify-self: center;
+}
+
+.nav-light .mode-switch {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.mode-switch button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.mode-switch button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-light .mode-switch button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Active mode button gets green background */
+.mode-active {
+  background: #00d084;
+  color: #050505;
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.3);
+}
+
+/* Profile button for sign-in (shown when user is not logged in) */
+.profile-btn {
+  border: none;
+  background: #00d084;
+  color: #050505;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Profile dropdown menu using HTML details element */
+.profile-menu {
+  position: relative;
+}
+
+.profile-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 0.25rem;
+  transition: background 0.2s ease;
+}
+
+.profile-summary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-light .profile-summary:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.profile-avatar-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-light .profile-avatar-placeholder {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.profile-menu summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+/* Profile card dropdown content with admin links */
+.profile-card {
+  position: absolute;
+  right: 0;
+  margin-top: 0.5rem;
+  min-width: 220px;
+  background: #101010;
+  color: #f7f7f7;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 60;
+}
+
+/* Light theme variant for profile card in host mode */
+.nav-light .profile-card {
+  background: #ffffff;
+  color: #171717;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.profile-name {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.profile-link,
+.signout-btn {
+  border: none;
+  background: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.profile-link:hover,
+.signout-btn:hover {
+  opacity: 0.8;
+}
+
+/* ========== Hero Section Styles ========== */
+/* Hero section uses CSS Grid for responsive layout */
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 3rem 2rem 2rem;
+}
+
+.hero-dark {
+  color: #f5f5f5;
+  padding: 4rem 2rem 2rem;
+  text-align: center;
+}
+
+.hero-light {
+  color: #1c1c1c;
+}
+
+/* Eyebrow text (small uppercase label above main heading) */
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.hero-copy h1 {
+  font-size: clamp(2.4rem, 4vw, 3.6rem);
+  margin: 0.5rem 0 1rem;
+}
+
+/* Accent color for highlighted text */
+.accent {
+  color: #00d084;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Primary button with green background */
+.btn-primary {
+  border: none;
+  background: #00d084;
+  color: #050505;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Ghost button with transparent background and border */
+.btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: inherit;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* Hero card with glassmorphism effect */
+.hero-card {
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ========== Category Tabs Styles ========== */
+/* Category row displays filter tabs horizontally */
+.category-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 2rem 2rem;
+}
+
+.category {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* Active category gets green background */
+.category.active {
+  background: #00d084;
+  color: #050505;
+  border-color: transparent;
+}
+
+/* ========== Page Layout Styles ========== */
+/* Page shell provides consistent padding for all pages */
+.page-shell {
+  padding: 0 2rem 4rem;
+}
+
+/* Grid layout for services with responsive columns */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ========== Service Card Styles ========== */
+/* Service card with glassmorphism effect and hover interactions */
+.service-card {
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 260px;
+}
+
+.service-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Service category badge */
+.service-category {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: #00d084;
+}
+
+.service-blurb {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+/* Wishlist button with active state */
+.wishlist-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.4rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.wishlist-btn.active {
+  background: #00d084;
+  color: #050505;
+}
+
+/* Host metadata (name, rating) */
+.host-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* Price and action button group */
+.price-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* ========== Floating Action Button (Search) ========== */
+/* FAB positioned fixed at bottom-right with green background */
+.fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  border: none;
+  background: #00d084;
+  color: #050505;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  z-index: 60;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 20px 40px rgba(0, 208, 132, 0.4);
+}
+
+.fab-animated {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ========== Search Modal Styles ========== */
+/* Full-screen modal overlay for search */
+.search-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 70;
+}
+
+/* Backdrop darkens the background */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Search panel with dark background and rounded corners */
+.search-panel {
+  position: relative;
+  width: min(600px, 90vw);
+  max-height: 80vh;
+  background: #0c0c0c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 71;
+}
+
+.search-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Search input field with rounded styling */
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.search-field input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+/* Scrollable results container */
+.search-results {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 50vh;
+}
+
+/* Individual search result row */
+.search-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========== Pointer Wobble Effect Styles ========== */
+/* Ripple layer for click animations */
+.ripple-layer {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Ripple animation on click */
+.ripple {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 2px solid rgba(0, 208, 132, 0.4);
+  border-radius: 999px;
+  animation: ripple 1s ease-out forwards;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* ========== Utility Layout Styles ========== */
+/* Stack layout for vertical lists */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* List card for admin pages and other list views */
+.list-card {
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Cart footer with total and checkout button */
+.cart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+/* ========== Sign-In Form Styles ========== */
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 420px;
+}
+
+.signin-form input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  padding: 0.75rem;
+}
+
+/* ========== Empty State Styles ========== */
+.empty-note {
+  opacity: 0.7;
+}
+
+/* ========== Toast Notification Styles ========== */
+/* Toast appears at bottom center for temporary messages */
+.toast {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 80;
+}
+
+/* ========== Footer Styles ========== */
+.footer {
+  padding: 2rem;
+  text-align: center;
+  opacity: 0.6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-link {
+  color: #00d084;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.footer-link:hover {
+  opacity: 0.8;
+}
+
+/* ========== Host Mode Styles ========== */
+.host-mode {
+  background: #fafafa;
+  color: #121212;
+  min-height: calc(100vh - 80px);
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+.host-mode * {
+  color: #121212 !important;
+}
+
+.host-mode .host-create-container,
+.host-mode .host-listings {
+  color: #121212;
+}
+
+.host-mode h2,
+.host-mode h3,
+.host-mode h4,
+.host-mode p,
+.host-mode label,
+.host-mode input,
+.host-mode textarea,
+.host-mode select {
+  color: #121212 !important;
+}
+
+.page-shell.transitioning {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.host-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.host-create-container {
+  background: #ffffff;
+  border-radius: 2rem;
+  padding: 3rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.host-create-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.host-create-header h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #121212;
+}
+
+.host-create-header p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.host-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #121212;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e5e5;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  color: #121212;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #00d084;
+  box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.btn-create {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.btn-create:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Student mode page */
+.student-mode {
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+/* ========== Modal Styles ========== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: #0c0c0c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  width: min(600px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-service-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+}
+
+.modal-service-info h4 {
+  margin: 0 0 0.5rem;
+}
+
+.modal-service-info p {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.word-count,
+.char-count {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-weight: normal;
+}
+
+.description-warning {
+  border-color: #ef4444 !important;
+}
+
+.word-count-warning {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.payment-warning {
+  text-align: center;
+  padding: 2rem;
+}
+
+.warning-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.payment-warning h4 {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+}
+
+.payment-warning p {
+  margin: 0.75rem 0;
+  opacity: 0.8;
+}
+
+.cart-safe {
+  color: #00d084;
+  font-weight: 600;
+  margin-top: 1rem !important;
+}
+
+.total-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5rem !important;
+  color: #00d084;
+}
+
+/* ========== Order Card Styles ========== */
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.order-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-header h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.order-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.order-status-pending {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.order-status-processing {
+  background: rgba(0, 208, 132, 0.2);
+  color: #00d084;
+}
+
+.order-status-completed {
+  background: rgba(0, 208, 132, 0.3);
+  color: #00d084;
+}
+
+.order-meta {
+  text-align: right;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.order-meta p {
+  margin: 0.25rem 0;
+}
+
+.order-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+}
+
+.party-info h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.party-info .email {
+  margin: 0.25rem 0;
+  font-weight: 600;
+  color: #00d084;
+}
+
+.party-info .name {
+  margin: 0.25rem 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.order-listing {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+}
+
+.order-listing h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.listing-title {
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.listing-desc {
+  opacity: 0.8;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.listing-creator {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.order-portfolio,
+.order-message {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+}
+
+.order-portfolio h4,
+.order-message h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.portfolio-link {
+  color: #00d084;
+  text-decoration: none;
+  word-break: break-all;
+  transition: opacity 0.2s ease;
+}
+
+.portfolio-link:hover {
+  opacity: 0.8;
+}
+
+.message-text {
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.order-items {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.75rem;
+}
+
+.order-items h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.order-items ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.order-items li {
+  margin: 0.5rem 0;
+  opacity: 0.9;
+}
+
+.item-price {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.order-total {
+  font-size: 1.25rem;
+  color: #00d084;
+}
+
+.order-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cart-message {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Cart item card styles */
+.cart-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.cart-item-content {
+  flex: 1;
+}
+
+.cart-item-price {
+  margin-top: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #00d084;
+}
+
+.cart-item-remove {
+  display: flex;
+  align-items: flex-start;
+}
+
+.btn-remove {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+/* Host listings styles */
+.host-listings {
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.host-listings-title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #121212;
+}
+
+.host-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.host-listing-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.host-listing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.host-listing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.host-listing-header h4 {
+  margin: 0;
+  color: #121212;
+  flex: 1;
+}
+
+.btn-delete-listing {
+  border: none;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.4rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-listing:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.host-listing-category {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0.5rem 0;
+  letter-spacing: 0.05em;
+}
+
+.host-listing-desc {
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.host-listing-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.host-listing-price {
+  font-weight: 600;
+  color: #00d084;
+  font-size: 1.1rem;
+}
+
+.host-listing-delivery {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.host-listings-empty {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.host-orders-note {
+  background: rgba(0, 208, 132, 0.1);
+  color: #00d084;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0, 208, 132, 0.2);
+}
+
+.order-status-carted {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.order-status-paid {
+  background: rgba(0, 208, 132, 0.3);
+  color: #00d084;
+}
+
+.char-count-warning {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* Profile Edit Modal Styles */
+.profile-edit-modal {
+  max-width: 500px;
+}
+
+.profile-edit-avatar {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-edit-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #00d084;
+  margin-bottom: 1rem;
+}
+
+.profile-edit-img-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border: 3px solid #00d084;
+}
+
+.profile-edit-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.profile-edit-email {
+  opacity: 0.7;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.profile-edit-note {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.profile-phone,
+.profile-usn,
+.profile-semester {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.price-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.price-range-inputs input {
+  flex: 1;
+}
+
+.price-range-inputs span {
+  opacity: 0.7;
+}
+
+/* ========== Responsive Breakpoints ========== */
+/* Mobile and tablet adjustments */
+@media (max-width: 900px) {
+  .nav-shell {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .mode-switch-center {
+    justify-self: center;
+    order: 2;
+  }
+
+  .nav-right {
+    justify-self: end;
+    order: 3;
+  }
+
+  .logo-pair {
+    order: 1;
+  }
+
+  .page-shell {
+    padding: 0 1.25rem 3rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .host-create-container {
+    padding: 2rem 1.5rem;
+  }
+
+  .host-page {
+    padding: 2rem 1rem;
+  }
+}
