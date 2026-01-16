@@ -29,12 +29,13 @@ import {
   Mail,
 } from 'lucide-react'
 import './App.css'
-import { db } from './supabase'
+import { supabase, db } from './supabase'
 
 // ---------- Constants describing backend location and allowed domains ----------
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const ALLOWED_DOMAINS = ['bmsce.ac.in', 'bmsca.org', 'bmscl.ac.in']
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true' || !!import.meta.env.VITE_SUPABASE_URL
+// Check if Supabase is properly configured with valid credentials
+const USE_SUPABASE = (import.meta.env.VITE_USE_SUPABASE === 'true' || !!import.meta.env.VITE_SUPABASE_URL) && supabase !== null
 
 // ---------- Comprehensive Fiverr-style category tabs ----------
 const SERVICE_CATEGORIES = [
@@ -394,7 +395,7 @@ function Navbar({
                 />
               ) : (
                 <div className="profile-avatar-placeholder">
-                  <span className="profile-avatar-initial">{getFirstLetter(user.name)}</span>
+                  <span className="profile-avatar-initial">{getFirstLetter(user.email)}</span>
                 </div>
               )}
             </summary>
@@ -482,6 +483,9 @@ function CategoryTabs({ activeCategory, onCategoryChange, mode }) {
  * HostListings component shows user's own listings with delete functionality
  */
 function HostListings({ user, services, onDelete, onToast }) {
+  // All hooks must be called at the top of the component before any conditionals
+  const [interestOpenId, setInterestOpenId] = useState(null)
+
   if (!user) {
     return (
       <div className="host-listings-empty">
@@ -528,13 +532,21 @@ function HostListings({ user, services, onDelete, onToast }) {
       <h3 className="host-listings-title">Your Listings</h3>
       <div className="host-listings-grid">
         {userListings.map((listing) => (
-          <div key={listing.id} className="host-listing-card">
+          <div
+            key={listing.id}
+            className="host-listing-card"
+            onClick={() => setInterestOpenId(listing.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') setInterestOpenId(listing.id) }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="host-listing-content">
               <div className="host-listing-header">
                 <h4>{listing.title}</h4>
                 <button
                   className="btn-delete-listing"
-                  onClick={() => handleDelete(listing.id)}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(listing.id) }}
                   title="Delete listing"
                 >
                   <Trash2 size={18} />
@@ -553,9 +565,18 @@ function HostListings({ user, services, onDelete, onToast }) {
                 )}
               </div>
             </div>
+            <HostInterestInfo
+              serviceId={listing.id}
+              onViewInterest={setInterestOpenId}
+            />
           </div>
         ))}
       </div>
+      <HostInterestsModal
+        serviceId={interestOpenId}
+        open={Boolean(interestOpenId)}
+        onClose={() => setInterestOpenId(null)}
+      />
     </div>
   )
 }
@@ -905,9 +926,9 @@ function ServiceDetailModal({ service, open, onClose, onAddToCart, onToggleWishl
             <button
               className="btn-primary btn-add-to-cart-large"
               disabled={!user}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 onAddToCart(service.id)
-                onClose()
               }}
             >
               {user ? 'Show Interest' : 'Sign in to Show Interest'}
@@ -1122,13 +1143,27 @@ function AddToCartModal({ service, open, onClose, onConfirm, user }) {
   const [portfolioLink, setPortfolioLink] = useState('')
   const [message, setMessage] = useState('')
   const [charCount, setCharCount] = useState(0)
+  const [negotiationOpen, setNegotiationOpen] = useState(false)
+  const [negotiationPrice, setNegotiationPrice] = useState('')
+  const [interestCount, setInterestCount] = useState(0)
   const MAX_CHARS = 50
+
+  useEffect(() => {
+    if (open && service?.id) {
+      // Load interest count from cart for this service
+      const localCart = JSON.parse(localStorage.getItem('local_cart') || '[]')
+      const count = localCart.filter(item => item.serviceId === service.id).length
+      setInterestCount(count)
+    }
+  }, [open, service?.id])
 
   useEffect(() => {
     if (!open) {
       setPortfolioLink('')
       setMessage('')
       setCharCount(0)
+      setNegotiationOpen(false)
+      setNegotiationPrice('')
     }
   }, [open])
 
@@ -1161,17 +1196,18 @@ function AddToCartModal({ service, open, onClose, onConfirm, user }) {
       alert('Message is required')
       return
     }
-    onConfirm({ portfolioLink, message })
+    // Pass negotiationPrice if set
+    onConfirm({ portfolioLink, message, negotiationPrice: negotiationOpen ? negotiationPrice : null })
     onClose()
   }
 
   if (!open) return null
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Show Interest</h3>
+          <h3>Show Interest {interestCount > 0 && <span style={{ fontSize: '0.8em', color: '#666', marginLeft: 8 }}>({interestCount})</span>}</h3>
           <button className="modal-close" onClick={onClose}>
             <X size={20} />
           </button>
@@ -1195,6 +1231,7 @@ function AddToCartModal({ service, open, onClose, onConfirm, user }) {
               type="url"
               value={portfolioLink}
               onChange={(e) => setPortfolioLink(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -1213,7 +1250,9 @@ function AddToCartModal({ service, open, onClose, onConfirm, user }) {
               id="message"
               value={message}
               onChange={handleMessageChange}
+              onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
+                e.stopPropagation()
                 if (e.key === 'Enter' && e.ctrlKey) {
                   // Allow Ctrl+Enter to submit
                   return
@@ -1234,16 +1273,42 @@ function AddToCartModal({ service, open, onClose, onConfirm, user }) {
               </p>
             )}
           </div>
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              className={`btn-primary${negotiationOpen ? ' active' : ''}`}
+              style={{ minWidth: 140, padding: '0.5em 1.5em', fontWeight: 600 }}
+              onClick={(e) => { e.stopPropagation(); setNegotiationOpen((prev) => !prev) }}
+            >
+              Negotiate for
+            </button>
+            {negotiationOpen && (
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={negotiationPrice}
+                onChange={e => setNegotiationPrice(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="Enter your price (INR)"
+                className="negotiation-input"
+                style={{ marginLeft: 8, width: 160, fontSize: 16, padding: '0.5em' }}
+              />
+            )}
+          </div>
         </div>
         <div className="modal-footer">
-          <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost" onClick={(e) => { e.stopPropagation(); onClose() }}>Cancel</button>
           <button
             type="button"
             className="btn-primary"
-            onClick={handleConfirm}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleConfirm()
+            }}
             disabled={!portfolioLink.trim() || charCount === 0}
           >
-            Show Interest
+            Submit Interest
           </button>
         </div>
       </div>
@@ -1406,8 +1471,11 @@ function ProfileEditModal({ user, open, onClose, onSave }) {
  * CartPage shows interested services with contact host via email.
  */
 function CartPage({ cart, onRemove, onCheckout, loading }) {
-  // Calculate total
+  // Calculate total - use negotiated price if available, otherwise use service price
   const total = cart.reduce((sum, item) => {
+    if (item.negotiationPrice) {
+      return sum + parseFloat(item.negotiationPrice)
+    }
     const price = item.service?.price
     if (typeof price === 'object' && price.min && price.max) {
       return sum + (price.min + price.max) / 2
@@ -1478,11 +1546,16 @@ function CartPage({ cart, onRemove, onCheckout, loading }) {
                   </p>
                 )}
                 <div className="cart-item-price">
-                  <span>
-                    {typeof item.service?.price === 'object' && item.service?.price?.min
+                  <div>
+                    <strong>Host price:</strong> {typeof item.service?.price === 'object' && item.service?.price?.min
                       ? `₹${item.service.price.min.toLocaleString('en-IN')} - ₹${item.service.price.max.toLocaleString('en-IN')}`
                       : `₹${(item.service?.price || 0).toLocaleString('en-IN')}`}
-                  </span>
+                  </div>
+                  {item.negotiationPrice && (
+                    <div style={{ marginTop: 8, color: '#10b981' }}>
+                      <strong>Your negotiated price:</strong> ₹{item.negotiationPrice}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="cart-item-remove">
@@ -1552,7 +1625,18 @@ function WishlistPage({ wishlist, onToggle, onAddToCart, onRemoveFromWishlist, m
                   <span>{item.service?.hostName}</span>
                 </div>
                 <div className="price-group">
-                  <strong>₹{item.service?.price?.toLocaleString('en-IN')}</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <strong>
+                      {typeof item.service?.price === 'object' && item.service?.price?.min
+                        ? `₹${item.service.price.min.toLocaleString('en-IN')} - ₹${item.service.price.max.toLocaleString('en-IN')}`
+                        : `₹${(item.service?.price || 0).toLocaleString('en-IN')}`}
+                    </strong>
+                    {item.negotiationPrice && (
+                      <span style={{ fontSize: '0.85em', color: '#10b981', fontWeight: 600 }}>
+                        Negotiated: ₹{item.negotiationPrice}
+                      </span>
+                    )}
+                  </div>
                   <button
                     className="btn-primary small"
                     disabled={mode !== 'student' || !user}
@@ -1571,6 +1655,129 @@ function WishlistPage({ wishlist, onToggle, onAddToCart, onRemoveFromWishlist, m
         </div>
       )}
     </section>
+  )
+}
+
+/**
+ * HostInterestsModal - shows interests in a hosted service
+ * Moved to top level to avoid z-index/clipping issues
+ */
+function HostInterestsModal({ serviceId, open, onClose }) {
+  const [interests, setInterests] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    async function fetchInterests() {
+      setLoading(true)
+      try {
+        const data = await db.getInterestsForService(serviceId)
+        if (mounted) setInterests(data)
+      } catch (err) {
+        console.error('Failed to fetch interests:', err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    if (serviceId && open) fetchInterests()
+    else if (!open) setInterests([]) // Clear on close
+    return () => { mounted = false }
+  }, [serviceId, open])
+
+  if (!open) return null
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600, maxHeight: '80vh', overflowY: 'auto' }}>
+        <div className="modal-header">
+          <h3>Student Interests</h3>
+          <button className="modal-close" onClick={(e) => { e.stopPropagation(); onClose() }}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="modal-body">
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: 20 }}>Loading interests...</p>
+          ) : interests.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: 20, color: '#666' }}>No student interests yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {interests.map((interest, idx) => (
+                <div key={idx} style={{ 
+                  padding: 16, 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: 8,
+                  backgroundColor: '#f9fafb'
+                }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <p style={{ fontWeight: 600, margin: '0 0 4px 0' }}>
+                      📧 {interest.user_email}
+                    </p>
+                  </div>
+                  
+                  {interest.message && (
+                    <div style={{ marginBottom: 8 }}>
+                      <p style={{ fontSize: '0.9em', color: '#4b5563', margin: '0 0 4px 0', fontWeight: 500 }}>Message:</p>
+                      <p style={{ fontSize: '0.9em', color: '#666', margin: 0, fontStyle: 'italic' }}>"{interest.message}"</p>
+                    </div>
+                  )}
+                  
+                  {interest.portfolio_link && (
+                    <div style={{ marginBottom: 8 }}>
+                      <a href={interest.portfolio_link} target="_blank" rel="noopener noreferrer" 
+                        style={{ fontSize: '0.9em', color: '#3b82f6', textDecoration: 'none' }}>
+                        🔗 View Portfolio
+                      </a>
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12 }}>
+                    <div>
+                      {interest.negotiation_price ? (
+                        <div>
+                          <p style={{ fontSize: '0.85em', color: '#666', margin: '0 0 4px 0' }}>Negotiated Price:</p>
+                          <p style={{ fontSize: '1.1em', fontWeight: 700, color: '#10b981', margin: 0 }}>
+                            ₹{parseInt(interest.negotiation_price).toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '0.9em', color: '#999', margin: 0 }}>Interested in host price</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${interest.user_email}` }}
+                      style={{
+                        padding: '0.5em 1em',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        fontSize: '0.9em',
+                        fontWeight: 500
+                      }}
+                    >
+                      Contact
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * HostInterestInfo component - button to trigger interest modal
+ */
+function HostInterestInfo({ serviceId, onViewInterest }) {
+  return (
+    <button className="btn-view-interest" onClick={(e) => { e.stopPropagation(); onViewInterest(serviceId) }}>
+      View Interest
+    </button>
   )
 }
 
@@ -1772,6 +1979,7 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
   const [hosts, setHosts] = useState([])
   const [loading, setLoading] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [viewInterestServiceId, setViewInterestServiceId] = useState(null)
 
   useEffect(() => {
     if (inventory && inventory.hosts) {
@@ -1803,6 +2011,8 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
       setLoading(false)
     }
   }
+
+
 
   if (!user?.isAdmin) {
     return (
@@ -1869,6 +2079,8 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
                         Created: {new Date(service.created_at).toLocaleDateString()}
                       </p>
                     )}
+                    {/* Show interest count and emails */}
+                    <HostInterestInfo serviceId={service.service_id} onViewInterest={setViewInterestServiceId} />
                   </div>
                 ))}
               </div>
@@ -1876,6 +2088,11 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
           ))}
         </div>
       )}
+      <HostInterestsModal
+        serviceId={viewInterestServiceId}
+        open={Boolean(viewInterestServiceId)}
+        onClose={() => setViewInterestServiceId(null)}
+      />
     </section>
   )
 }
@@ -2176,7 +2393,7 @@ function AppShell() {
           title: svc.title,
           description: svc.description,
           category: svc.category,
-          price: svc.price_min && svc.price_max 
+          price: svc.price_min && svc.price_max
             ? { min: svc.price_min, max: svc.price_max }
             : (svc.price_in_inr || 0),
           hostName: svc.host_name,
@@ -2225,6 +2442,14 @@ function AppShell() {
   useEffect(() => {
     localStorage.setItem('wishlist', JSON.stringify(wishlist))
   }, [wishlist])
+
+  // Persist cart to localStorage for local/demo services (for non-Supabase backup and demo persistence)
+  useEffect(() => {
+    const localItems = cart.filter(item => item.id?.startsWith('local-'))
+    if (localItems.length > 0) {
+      localStorage.setItem('local_cart', JSON.stringify(localItems))
+    }
+  }, [cart])
 
   // Load cart and wishlist from database when user is available
   useEffect(() => {
@@ -2459,43 +2684,58 @@ function AppShell() {
   }
 
   // Add service to cart with portfolio and message
-  const handleAddToCart = async ({ portfolioLink, message }) => {
+  const handleAddToCart = async ({ portfolioLink, message, negotiationPrice }) => {
     const serviceId = addToCartModal.service?.id
     if (!serviceId || !user) return
 
+    // Only allow UUIDs for Supabase
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serviceId)
+    if (!isUUID) {
+      // Handle demo/local service: add to local cart only, do not call Supabase
+      setCart((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}`,
+          serviceId,
+          userEmail: user.email,
+          quantity: 1,
+          portfolioLink,
+          message,
+          negotiationPrice,
+          service: addToCartModal.service,
+        },
+      ])
+      setToast('Added to cart (local/demo service)!')
+      return
+    }
+
     try {
+      // Save interest (negotiation) for host tracking
+      if (USE_SUPABASE) {
+        await db.saveInterest({
+          serviceId,
+          userEmail: user.email,
+          negotiationPrice,
+          portfolioLink,
+          message,
+        })
+      }
+      // Add to cart
       let updated
       if (USE_SUPABASE) {
-        // Use Supabase - save to database
         await db.addToCart({
           userEmail: user.email,
           serviceId,
           quantity: 1,
           portfolioLink,
           message,
+          negotiationPrice,
         })
-        // Fetch updated cart from database
         updated = await db.getCart(user.email)
         setCart(updated || [])
-        setToast('Interest shown successfully!')
+        setToast('Added to cart!')
       } else {
-        // Use REST API
-        updated = await apiRequest('/cart', {
-          method: 'POST',
-          body: JSON.stringify({
-            userEmail: user.email,
-            serviceId,
-            quantity: 1,
-            portfolioLink,
-            message,
-          }),
-        })
-        setCart(updated || [])
-        setToast('Interest shown successfully!')
-      }
-    } catch (_err) {
-      // Handle example services - store them locally
-      if (_err?.message === 'EXAMPLE_SERVICE' || _err?.message?.includes('EXAMPLE_SERVICE')) {
+        // Handle example services - store them locally
         const service = services.find((svc) => svc && svc.id === serviceId)
         if (service) {
           const localCartItem = {
@@ -2505,6 +2745,7 @@ function AppShell() {
             quantity: 1,
             portfolioLink,
             message,
+            negotiationPrice,
           }
           setCart((prev) => {
             const newCart = [...prev, localCartItem]
@@ -2513,15 +2754,11 @@ function AppShell() {
             localStorage.setItem('local_cart', JSON.stringify(localItems))
             return newCart
           })
-          setToast('Interest shown for example service (local only).')
-          return
+          setToast('Added to cart (local service).')
         }
       }
-      console.error('Add to cart error:', _err)
-      const errorMessage = _err?.message || 'Failed to add to cart. Please try again.'
-      setToast(errorMessage)
-      // Don't fallback to local state if user is signed in - we want database sync
-      throw _err
+    } catch (err) {
+      setToast(err.message || 'Failed to add to cart')
     }
   }
 
@@ -2534,7 +2771,7 @@ function AppShell() {
         // Remove local item
         setCart((prev) => {
           const newCart = prev.filter((item) => item.id !== cartId)
-          const localItems = newCart.filter(item => item.id?.startsWith('local-'))
+          const localItems = newCart.filter((item) => item.id?.startsWith('local-'))
           localStorage.setItem('local_cart', JSON.stringify(localItems))
           console.log('Updated local cart:', newCart)
           return newCart

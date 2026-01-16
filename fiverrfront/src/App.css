@@ -1130,7 +1130,11 @@ input {
   align-items: center;
   justify-content: center;
   z-index: 100;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.15s ease;
+  will-change: opacity;
+  contain: layout style paint;
+  backdrop-filter: blur(2px);
+  animation-fill-mode: forwards;
 }
 
 @keyframes fadeIn {
@@ -1143,14 +1147,17 @@ input {
 }
 
 .modal-content {
-  background: #0c0c0c;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   width: min(600px, 90vw);
-  max-height: 90vh;
+  max-height: 80vh;
   overflow-y: auto;
-  animation: slideUp 0.3s ease;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease forwards;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  will-change: transform;
+  backface-visibility: hidden;
+  color: #1f2937;
 }
 
 @keyframes slideUp {
@@ -1169,30 +1176,34 @@ input {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  color: #1f2937;
+  font-weight: 600;
 }
 
 .modal-close {
   border: none;
   background: transparent;
-  color: inherit;
+  color: #6b7280;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 0.5rem;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
+  color: #1f2937;
 }
 
 .modal-body {
   padding: 1.5rem;
+  color: #1f2937;
 }
 
 .modal-footer {
@@ -1200,7 +1211,7 @@ input {
   justify-content: flex-end;
   gap: 1rem;
   padding: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #e5e7eb;
 }
 
 .modal-service-info {
@@ -1606,11 +1617,25 @@ input {
   border-radius: 1rem;
   padding: 1.5rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .host-listing-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.host-listing-content {
+  flex: 1;
+}
+
+/* Button container within card */
+.host-listing-card > button,
+.host-listing-card .btn-view-interest {
+  align-self: flex-start;
+  margin-top: auto;
 }
 
 .host-listing-header {
@@ -1658,6 +1683,7 @@ input {
   margin: 0.75rem 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1680,6 +1706,45 @@ input {
 .host-listing-delivery {
   font-size: 0.85rem;
   color: #666;
+}
+
+/* View Interest button - specific styling for host mode compatibility */
+.btn-view-interest {
+  background: linear-gradient(135deg, #00d084, #10b981) !important;
+  color: #050505 !important;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.3) !important;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-view-interest:hover {
+  background: linear-gradient(135deg, #10b981, #00d084) !important;
+  box-shadow: 0 4px 12px rgba(0, 208, 132, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.btn-view-interest:active {
+  transform: translateY(0);
+}
+
+/* Ensure button stays visible in host mode (light background) */
+body.host-mode-active .btn-view-interest {
+  background: linear-gradient(135deg, #00d084, #10b981) !important;
+  color: #050505 !important;
+  box-shadow: 0 2px 8px rgba(0, 208, 132, 0.25) !important;
+}
+
+body.host-mode-active .btn-view-interest:hover {
+  background: linear-gradient(135deg, #10b981, #00d084) !important;
+  box-shadow: 0 4px 12px rgba(0, 208, 132, 0.35) !important;
 }
 
 .host-listings-empty {
@@ -2196,6 +2261,9 @@ body.host-mode-active .service-detail-footer {
   padding: 1.5rem;
   transition: all 0.2s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .admin-service-card:hover {
@@ -2203,6 +2271,12 @@ body.host-mode-active .service-detail-footer {
   border-color: rgba(0, 208, 132, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 208, 132, 0.15);
+}
+
+/* Ensure button in admin card stays visible and doesn't flash */
+.admin-service-card .btn-view-interest {
+  align-self: flex-start;
+  margin-top: auto;
 }
 
 .admin-service-header {

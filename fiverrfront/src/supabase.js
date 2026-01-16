@@ -3,11 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase URL and Anon Key must be set in environment variables')
-}
+// Only create Supabase client if credentials are properly set
+const hasValidSupabaseConfig = supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://')
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = hasValidSupabaseConfig 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null
 
 // Helper functions for database operations
 export const db = {
@@ -273,6 +274,7 @@ export const db = {
       quantity: item.quantity,
       portfolioLink: item.portfolio_link,
       message: item.message,
+      negotiationPrice: item.negotiation_price,
       service: this.transformService(item.services),
     }))
   },
@@ -325,13 +327,14 @@ export const db = {
       }
 
       if (existingData) {
-        // Update existing cart item
+        // Update existing cart item (include negotiation price)
         const { data, error } = await supabase
           .from('carts')
           .update({
             portfolio_link: cartData.portfolioLink || null,
             message: cartData.message || null,
             quantity: cartData.quantity || 1,
+            negotiation_price: cartData.negotiationPrice || null,
           })
           .eq('id', existingData.id)
           .select(`
@@ -357,6 +360,7 @@ export const db = {
           quantity: cartData.quantity || 1,
           portfolio_link: cartData.portfolioLink || null,
           message: cartData.message || null,
+          negotiation_price: cartData.negotiationPrice || null,
         }])
         .select(`
           *,
@@ -687,6 +691,34 @@ export const db = {
       servicesByHost: Object.values(servicesByHost),
       cartByStudent: Object.values(cartByStudent)
     }
+  },
+
+  // Save interest (negotiation) for a service
+  async saveInterest({ serviceId, userEmail, negotiationPrice, portfolioLink, message }) {
+    const { error } = await supabase
+      .from('interests')
+      .insert([
+        {
+          service_id: serviceId,
+          user_email: userEmail,
+          negotiation_price: negotiationPrice ? parseInt(negotiationPrice, 10) : null,
+          portfolio_link: portfolioLink,
+          message,
+        }
+      ])
+    if (error) throw error
+    return true
+  },
+
+  // Get interests for a service (for host view)
+  async getInterestsForService(serviceId) {
+    const { data, error } = await supabase
+      .from('interests')
+      .select('user_email, negotiation_price, portfolio_link, message, created_at')
+      .eq('service_id', serviceId)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data || []
   },
 }
 
