@@ -11,6 +11,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper functions for database operations
 export const db = {
+  // Remove a service from wishlist for a user
+  async removeFromWishlist(userEmail, serviceId) {
+    console.log('Attempting to remove from wishlist:', { userEmail, serviceId });
+
+    // Only allow UUIDs (real services)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serviceId);
+    if (!isUUID) throw new Error('EXAMPLE_SERVICE');
+
+    const user = await this.getUserByEmail(userEmail);
+    if (!user || !serviceId) {
+      throw new Error('User or serviceId missing');
+    }
+
+    // Log for debugging
+    console.log('Deleting wishlist for user:', user.id, 'service:', serviceId);
+
+    // Delete by user_id and service_id (not by wishlist row id)
+    const { error } = await supabase
+      .from('wishlists')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('service_id', serviceId);
+
+    if (error) throw error;
+    return true;
+  },
   // Users
   async getUserByEmail(email) {
     const { data, error } = await supabase
@@ -111,27 +137,113 @@ export const db = {
   },
 
   async deleteService(serviceId, userEmail) {
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', serviceId)
-      .eq('host_email', userEmail)
-    
-    if (error) {
-      console.error('Error deleting service:', error)
-      throw error
+    try {
+      console.log('Attempting to delete service:', serviceId, 'for user:', userEmail)
+      
+      // First check if the service exists and belongs to this user
+      const { data: existingService, error: fetchError } = await supabase
+        .from('services')
+        .select('id, host_email')
+        .eq('id', serviceId)
+        .maybeSingle()
+      
+      if (fetchError) {
+        console.error('Error fetching service before delete:', fetchError)
+        throw new Error('Failed to verify service ownership: ' + fetchError.message)
+      }
+      
+      if (!existingService) {
+        throw new Error('Service not found. It may have already been deleted.')
+      }
+      
+      // Verify ownership
+      if (existingService.host_email !== userEmail) {
+        throw new Error('You do not have permission to delete this service.')
+      }
+      
+      // Remove references from wishlist table
+      const { error: wishlistDeleteError } = await supabase
+        .from('wishlists')
+        .delete()
+        .eq('service_id', serviceId)
+
+      if (wishlistDeleteError) {
+        console.error('Error removing references from wishlist:', wishlistDeleteError)
+        throw new Error('Failed to remove references from wishlist: ' + wishlistDeleteError.message)
+      }
+
+      console.log('References removed from wishlist successfully.')
+
+      // Remove references from carts table
+      const { error: cartDeleteError } = await supabase
+        .from('carts')
+        .delete()
+        .eq('service_id', serviceId)
+
+      if (cartDeleteError) {
+        console.error('Error removing references from carts:', cartDeleteError)
+        throw new Error('Failed to remove references from carts: ' + cartDeleteError.message)
+      }
+
+      console.log('References removed from carts successfully.')
+      // Perform the deletion
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceId)
+        .eq('host_email', userEmail)
+      
+      if (error) {
+        console.error('Error deleting service:', error)
+        throw new Error('Failed to delete service: ' + error.message)
+      }
+      
+      console.log('Service deleted successfully:', serviceId)
+      return { success: true }
+    } catch (err) {
+      console.error('deleteService error:', err)
+      throw err
     }
   },
 
   async deleteServiceAdmin(serviceId) {
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', serviceId)
-    
-    if (error) {
-      console.error('Error deleting service (admin):', error)
-      throw error
+    try {
+      console.log('Admin attempting to delete service:', serviceId)
+      
+      // First check if the service exists
+      const { data: existingService, error: fetchError } = await supabase
+        .from('services')
+        .select('id, host_email, title')
+        .eq('id', serviceId)
+        .maybeSingle()
+      
+      if (fetchError) {
+        console.error('Error fetching service for admin delete:', fetchError)
+        throw new Error('Failed to verify service: ' + fetchError.message)
+      }
+      
+      if (!existingService) {
+        throw new Error('Service not found. It may have already been deleted.')
+      }
+      
+      console.log('Admin deleting service:', existingService.title, 'hosted by:', existingService.host_email)
+      
+      // Perform the deletion as admin
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceId)
+      
+      if (error) {
+        console.error('Error deleting service (admin):', error)
+        throw new Error('Failed to delete service: ' + error.message)
+      }
+      
+      console.log('Admin deleted service successfully:', serviceId)
+      return { success: true, message: `Deleted "${existingService.title}"` }
+    } catch (err) {
+      console.error('deleteServiceAdmin error:', err)
+      throw err
     }
   },
 

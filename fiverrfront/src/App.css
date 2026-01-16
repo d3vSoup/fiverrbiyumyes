@@ -433,6 +433,26 @@ input {
   border-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Profile avatar initial - first letter of name */
+.profile-avatar-initial {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d084, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.nav-light .profile-avatar-initial {
+  background: linear-gradient(135deg, #10b981, #00d084);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
 /* Removed duplicate - using profile-summary instead */
 
 /* Profile card dropdown content with admin links */
@@ -738,6 +758,29 @@ input {
   align-items: center;
 }
 
+/* Search close button styling - more visible */
+.search-panel-head button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: inherit;
+  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.search-panel-head button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 /* Search input field with rounded styling */
 .search-field {
   display: flex;
@@ -832,6 +875,48 @@ input {
   align-items: center;
   justify-content: space-between;
   margin-top: 0.5rem;
+}
+
+.cart-total {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-total .item-count {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.btn-contact-hosts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Wishlist remove button */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-remove-wishlist {
+  background: rgba(239, 68, 68, 0.15);
+  border: none;
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-wishlist:hover {
+  background: rgba(239, 68, 68, 0.25);
+  transform: scale(1.1);
 }
 
 /* ========== Sign-In Form Styles ========== */
@@ -1661,6 +1746,20 @@ input {
   border: 3px solid #00d084;
 }
 
+.profile-edit-initial {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d084, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 32px;
+  color: #ffffff;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
 .profile-edit-name {
   font-size: 1.25rem;
   font-weight: 600;
@@ -2144,6 +2243,16 @@ body.host-mode-active .service-detail-footer {
 .btn-delete-admin:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .admin-service-category {

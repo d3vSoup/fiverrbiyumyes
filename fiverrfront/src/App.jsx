@@ -26,6 +26,7 @@ import {
   X,
   Trash2,
   Package,
+  Mail,
 } from 'lucide-react'
 import './App.css'
 import { db } from './supabase'
@@ -38,7 +39,6 @@ const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true' || !!import.me
 // ---------- Comprehensive Fiverr-style category tabs ----------
 const SERVICE_CATEGORIES = [
   { id: 'all', label: 'All Services', emoji: '✨' },
-  { id: 'trending', label: 'Trending', emoji: '🔥' },
   { id: 'graphics-design', label: 'Graphics & Design', emoji: '🎨' },
   { id: 'programming-tech', label: 'Programming & Tech', emoji: '💻' },
   { id: 'digital-marketing', label: 'Digital Marketing', emoji: '📱' },
@@ -257,10 +257,17 @@ function Navbar({
   onOpenSignIn,
   onGoogleSignIn,
   onEditProfile,
+  navigate,
 }) {
   const isHostMode = mode === 'host'
 
-    // Initialize Google Sign-In button
+  // Helper function to get first letter of name for PFP
+  const getFirstLetter = (name) => {
+    if (!name) return '?'
+    return name.charAt(0).toUpperCase()
+  }
+
+  // Initialize Google Sign-In button
   useEffect(() => {
     if (user) {
       // Clear button if user is signed in
@@ -338,6 +345,13 @@ function Navbar({
     }
   }, [user, onGoogleSignIn])
 
+  // Handle mode change - navigate to home to show the appropriate page
+  const handleModeToggle = (newMode) => {
+    onModeChange(newMode)
+    // Always navigate to home when switching modes
+    navigate('/')
+  }
+
   return (
     <header className={`nav-shell ${isHostMode ? 'nav-light' : 'nav-dark'}`}>
       <Link to="/" className="logo-pair">
@@ -348,13 +362,13 @@ function Navbar({
       <div className="mode-switch mode-switch-center">
         <button
           className={mode === 'student' ? 'mode-active' : ''}
-          onClick={() => onModeChange('student')}
+          onClick={() => handleModeToggle('student')}
         >
-          Student
+          Services
         </button>
         <button
           className={mode === 'host' ? 'mode-active' : ''}
-          onClick={() => onModeChange('host')}
+          onClick={() => handleModeToggle('host')}
         >
           Host
         </button>
@@ -380,7 +394,7 @@ function Navbar({
                 />
               ) : (
                 <div className="profile-avatar-placeholder">
-                  <User size={20} />
+                  <span className="profile-avatar-initial">{getFirstLetter(user.name)}</span>
                 </div>
               )}
             </summary>
@@ -476,10 +490,14 @@ function HostListings({ user, services, onDelete, onToast }) {
     )
   }
 
-  const userListings = (services || []).filter((s) => s.hostEmail === user.email)
+  // Filter out example services (those that start with 'seed-') for host listings
+  const userListings = (services || []).filter((s) => 
+    s && s.hostEmail === user.email && !s.id.startsWith('seed-')
+  )
 
   const handleDelete = async (serviceId) => {
     if (!confirm('Are you sure you want to delete this listing?')) return
+    
     try {
       if (USE_SUPABASE) {
         await db.deleteService(serviceId, user.email)
@@ -492,8 +510,8 @@ function HostListings({ user, services, onDelete, onToast }) {
       if (onToast) onToast('Listing deleted successfully')
       if (onDelete) onDelete()
     } catch (err) {
-      if (onToast) onToast('Failed to delete listing')
       console.error('Delete error:', err)
+      if (onToast) onToast(err.message || 'Failed to delete listing')
     }
   }
 
@@ -1300,6 +1318,12 @@ function ProfileEditModal({ user, open, onClose, onSave }) {
     }
   }
 
+  // Helper function to get first letter of name for avatar
+  const getFirstLetter = (name) => {
+    if (!name) return '?'
+    return name.charAt(0).toUpperCase()
+  }
+
   if (!open || !user) return null
 
   return (
@@ -1318,7 +1342,7 @@ function ProfileEditModal({ user, open, onClose, onSave }) {
                 <img src={user.image} alt={user.name} className="profile-edit-img" />
               ) : (
                 <div className="profile-edit-img-placeholder">
-                  <User size={40} />
+                  <span className="profile-edit-initial">{getFirstLetter(user.name)}</span>
                 </div>
               )}
               <p className="profile-edit-name">{user.name}</p>
@@ -1379,10 +1403,10 @@ function ProfileEditModal({ user, open, onClose, onSave }) {
 }
 
 /**
- * CartPage shows INR totals plus checkout button syncing to backend orders.
+ * CartPage shows interested services with contact host via email.
  */
 function CartPage({ cart, onRemove, onCheckout, loading }) {
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
+  // Calculate total
   const total = cart.reduce((sum, item) => {
     const price = item.service?.price
     if (typeof price === 'object' && price.min && price.max) {
@@ -1391,15 +1415,44 @@ function CartPage({ cart, onRemove, onCheckout, loading }) {
     return sum + (price || 0)
   }, 0)
 
-  const handleCheckoutClick = () => {
-    setCheckoutModalOpen(true)
+  // Handle proceed to contact - opens mailto with all hosts
+  const handleContactHosts = () => {
+    // Get unique host emails from cart items
+    const hostEmails = [...new Set(cart.map(item => item.service?.hostEmail).filter(Boolean))]
+    
+    if (hostEmails.length === 0) {
+      alert('No hosts to contact.')
+      return
+    }
+
+    // Create mailto link
+    const subject = encodeURIComponent('Interest in Your Service')
+    const body = encodeURIComponent(
+      `Hello,\n\nI am interested in your service(s) listed on Fiverr for Students.\n\n` +
+      `Service(s):\n${cart.map(item => `- ${item.service?.title}`).join('\n')}\n\n` +
+      `Please let me know more details.\n\nThank you!`
+    )
+    
+    if (hostEmails.length === 1) {
+      // Single host - direct email
+      window.location.href = `mailto:${hostEmails[0]}?subject=${subject}&body=${body}`
+    } else {
+      // Multiple hosts - show options
+      const emailList = hostEmails.join(', ')
+      window.location.href = `mailto:?bcc=${emailList}&subject=${subject}&body=${body}`
+    }
+  }
+
+  // Handle remove item from cart
+  const handleRemove = (cartId) => {
+    if (onRemove) onRemove(cartId)
   }
 
   return (
     <section className="page-shell">
       <h2>Cart</h2>
       {cart.length === 0 ? (
-        <p className="empty-note">Nothing booked yet. Search for CAD, maths, UI/UX, etc.</p>
+        <p className="empty-note">Nothing in cart yet. Browse services and show interest!</p>
       ) : (
         <div className="stack">
           {cart.map((item) => (
@@ -1421,7 +1474,7 @@ function CartPage({ cart, onRemove, onCheckout, loading }) {
                 )}
                 {item.service?.hostEmail && (
                   <p className="cart-host-contact">
-                    <strong>Contact Host:</strong> <a href={`mailto:${item.service.hostEmail}`}>{item.service.hostEmail}</a>
+                    <strong>Host:</strong> <a href={`mailto:${item.service.hostEmail}`}>{item.service.hostEmail}</a>
                   </p>
                 )}
                 <div className="cart-item-price">
@@ -1433,25 +1486,28 @@ function CartPage({ cart, onRemove, onCheckout, loading }) {
                 </div>
               </div>
               <div className="cart-item-remove">
-                <button className="btn-remove" onClick={() => onRemove(item.id)}>
+                <button className="btn-remove" onClick={() => handleRemove(item.id)}>
                   Remove
                 </button>
               </div>
             </div>
           ))}
           <footer className="cart-footer">
-            <strong>₹{total.toLocaleString('en-IN')}</strong>
-            <button className="btn-primary" disabled={loading} onClick={handleCheckoutClick}>
-              {loading ? 'Syncing...' : 'Proceed to Checkout'}
+            <div className="cart-total">
+              <strong>Total: ₹{total.toLocaleString('en-IN')}</strong>
+              <span className="item-count">({cart.length} item{cart.length > 1 ? 's' : ''})</span>
+            </div>
+            <button 
+              className="btn-primary btn-contact-hosts" 
+              disabled={loading} 
+              onClick={handleContactHosts}
+            >
+              <Mail size={18} />
+              {loading ? 'Loading...' : 'Proceed to Contact Hosts'}
             </button>
           </footer>
         </div>
       )}
-      <CheckoutModal
-        open={checkoutModalOpen}
-        onClose={() => setCheckoutModalOpen(false)}
-        cartTotal={total}
-      />
     </section>
   )
 }
@@ -1459,7 +1515,13 @@ function CartPage({ cart, onRemove, onCheckout, loading }) {
 /**
  * WishlistPage allows moving saved services into the cart.
  */
-function WishlistPage({ wishlist, onToggle, onAddToCart, mode, user }) {
+function WishlistPage({ wishlist, onToggle, onAddToCart, onRemoveFromWishlist, mode, user }) {
+  const handleRemoveClick = (e, wishlistId) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onRemoveFromWishlist(wishlistId)
+  }
+
   return (
     <section className="page-shell">
       <h2>Wishlist</h2>
@@ -1475,9 +1537,15 @@ function WishlistPage({ wishlist, onToggle, onAddToCart, mode, user }) {
                   <h3>{item.service?.title}</h3>
                   <p className="service-blurb">{item.service?.description}</p>
                 </div>
-                <button className="wishlist-btn active" onClick={() => onToggle(item.serviceId)}>
-                  <Heart size={18} />
-                </button>
+                <div className="header-actions">
+  <button
+    className="btn-remove-wishlist"
+    onClick={(e) => handleRemoveClick(e, item.id)}
+  >
+    <X size={16} />
+  </button>
+</div>
+
               </header>
               <footer>
                 <div className="host-meta">
@@ -1488,7 +1556,11 @@ function WishlistPage({ wishlist, onToggle, onAddToCart, mode, user }) {
                   <button
                     className="btn-primary small"
                     disabled={mode !== 'student' || !user}
-                    onClick={() => onAddToCart(item.serviceId)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onAddToCart(item.serviceId)
+                    }}
                   >
                     Interested
                   </button>
@@ -1699,6 +1771,7 @@ function SignInPage({ onEmailLogin, onGoogleSignIn, loading, user }) {
 function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
   const [hosts, setHosts] = useState([])
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     if (inventory && inventory.hosts) {
@@ -1709,6 +1782,7 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
   const handleDeleteService = async (serviceId) => {
     if (!confirm('Are you sure you want to delete this service? This action cannot be undone.')) return
     
+    setDeletingId(serviceId)
     setLoading(true)
     try {
       if (USE_SUPABASE) {
@@ -1722,9 +1796,10 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
       if (onToast) onToast('Service deleted successfully')
       if (onServiceDeleted) onServiceDeleted()
     } catch (err) {
-      if (onToast) onToast('Failed to delete service: ' + (err.message || 'Unknown error'))
       console.error('Delete service error:', err)
+      if (onToast) onToast(err.message || 'Failed to delete service')
     } finally {
+      setDeletingId(null)
       setLoading(false)
     }
   }
@@ -1770,10 +1845,14 @@ function AdminManageItemsPage({ inventory, user, onServiceDeleted, onToast }) {
                       <button
                         className="btn-delete-admin"
                         onClick={() => handleDeleteService(service.service_id)}
-                        disabled={loading}
+                        disabled={loading && deletingId === service.service_id}
                         title="Delete service"
                       >
-                        <Trash2 size={16} />
+                        {loading && deletingId === service.service_id ? (
+                          <span className="loading-spinner">⏳</span>
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
                       </button>
                     </div>
                     <p className="admin-service-category">{service.category}</p>
@@ -2457,6 +2536,7 @@ function AppShell() {
           const newCart = prev.filter((item) => item.id !== cartId)
           const localItems = newCart.filter(item => item.id?.startsWith('local-'))
           localStorage.setItem('local_cart', JSON.stringify(localItems))
+          console.log('Updated local cart:', newCart)
           return newCart
         })
         setToast('Removed from cart.')
@@ -2530,7 +2610,14 @@ function AppShell() {
           body: JSON.stringify({ userEmail: user.email, serviceId }),
         })
       }
-      setWishlist(updated || [])
+      setWishlist(() => {
+  const next = updated || []
+  return next.filter(
+    (item, index, self) =>
+      index === self.findIndex((i) => i.serviceId === item.serviceId)
+  )
+})
+
       const wasAdded = updated?.some(item => item.serviceId === serviceId)
       setToast(wasAdded ? 'Added to wishlist!' : 'Removed from wishlist!')
     } catch (_err) {
@@ -2539,22 +2626,22 @@ function AppShell() {
         const service = services.find((svc) => svc && svc.id === serviceId)
         if (service) {
           setWishlist((prev) => {
-            const exists = prev.find((item) => item.serviceId === serviceId)
-            if (exists) {
-              setToast('Removed from wishlist (local).')
-              const newWishlist = prev.filter((item) => item.serviceId !== serviceId)
-              // Save local items separately for persistence
-              const localItems = newWishlist.filter(item => item.id?.startsWith('local-'))
-              localStorage.setItem('local_wishlist', JSON.stringify(localItems))
-              return newWishlist
-            }
-            setToast('Added example service to wishlist (local only).')
-            const newWishlist = [...prev, { id: `local-${Date.now()}`, serviceId, service }]
-            // Save local items separately for persistence
-            const localItems = newWishlist.filter(item => item.id?.startsWith('local-'))
-            localStorage.setItem('local_wishlist', JSON.stringify(localItems))
-            return newWishlist
-          })
+  const exists = prev.find((item) => item.serviceId === serviceId)
+
+  const next = exists
+    ? prev.filter((item) => item.serviceId !== serviceId)
+    : [...prev, { id: `local-${Date.now()}`, serviceId, service }]
+
+  const deduped = next.filter(
+    (item, index, self) =>
+      index === self.findIndex((i) => i.serviceId === item.serviceId)
+  )
+
+  const localItems = deduped.filter(item => item.id?.startsWith('local-'))
+  localStorage.setItem('local_wishlist', JSON.stringify(localItems))
+
+  return deduped
+})
           return
         }
       }
@@ -2564,6 +2651,67 @@ function AppShell() {
       // Don't update local state if user is signed in - we want database sync
     }
   }
+
+// Remove from wishlist by ID.
+  const handleRemoveFromWishlist = async(wishlistId) => {
+    try {
+      console.log('Attempting to remove wishlist item locally:', wishlistId);
+
+      // Find the item in the wishlist by id
+      const itemToRemove = wishlist.find((item) => item.id === wishlistId);
+      const serviceId = itemToRemove?.serviceId;
+      const isLocalItem = wishlistId?.toString().startsWith('local-');
+
+      console.log('Item details:', { itemToRemove, serviceId, isLocalItem });
+
+      // Remove from local state by id only (like cart)
+      setWishlist((prev) => {
+        const newWishlist = prev.filter((item) => item.id !== wishlistId);
+        const localItems = newWishlist.filter((item) => item.id?.startsWith('local-'));
+        localStorage.setItem('local_wishlist', JSON.stringify(localItems));
+        console.log('Updated local wishlist:', newWishlist);
+        return newWishlist;
+      });
+
+      setToast('Removed from wishlist.');
+
+      if (isLocalItem) {
+        console.log('Local item removed successfully:', wishlistId);
+        return;
+      }
+
+      if (user?.email && serviceId) {
+        if (USE_SUPABASE) {
+          console.log('Attempting to remove from Supabase:', { userEmail: user.email, serviceId });
+          const removalSuccess = await db.removeFromWishlist(user.email, serviceId);
+          console.log('Supabase removal success:', removalSuccess);
+
+          if (removalSuccess) {
+            // Fetch updated wishlist from database only after successful removal
+            const updated = await db.getWishlist(user.email);
+            setWishlist(updated || []);
+            console.log('Updated wishlist fetched from Supabase:', updated);
+          } else {
+            console.warn('Item not found in Supabase for removal:', serviceId);
+          }
+        }
+      }
+    } catch (_err) {
+      console.error('Remove from wishlist error:', _err);
+      setToast('Failed to remove from wishlist.');
+      // Rollback: re-fetch wishlist on error so user sees current state
+      try {
+        if (user?.email && USE_SUPABASE) {
+          console.log('Attempting to refetch wishlist after error.');
+          const updated = await db.getWishlist(user.email);
+          setWishlist(updated || []);
+          console.log('Refetched wishlist:', updated);
+        }
+      } catch (fetchErr) {
+        console.error('Error refetching wishlist after removal failure:', fetchErr);
+      }
+    }
+  };
 
   // Helper to check wishlist membership.
   const isWishlisted = (serviceId) => wishlist.some((item) => item.serviceId === serviceId)
@@ -2705,6 +2853,7 @@ function AppShell() {
         onOpenSignIn={() => navigate('/signin')}
         onGoogleSignIn={handleGoogleSignIn}
         onEditProfile={() => setProfileEditModal(true)}
+        navigate={navigate}
       />
 
       <Routes>
@@ -2796,6 +2945,7 @@ function AppShell() {
               wishlist={wishlist}
               onToggle={handleToggleWishlist}
               onAddToCart={handleAddToCartClick}
+              onRemoveFromWishlist={handleRemoveFromWishlist}
               mode={mode}
               user={user}
             />
